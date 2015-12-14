@@ -57,6 +57,20 @@
         }, 'WebIntent', 'onNewIntent', []);
     };
 
+    WebIntent.prototype.registerBroadcastReceiver = function(params, callback) {
+        return cordova.exec(function(args) {
+            callback(args);
+        }, function(args) {
+        }, 'WebIntent', 'registerBroadcastReceiver', [params]);
+    };
+
+    WebIntent.prototype.unregisterBroadcastReceiver = function(callback) {
+        return cordova.exec(function(args) {
+            callback(args);
+        }, function(args) {
+        }, 'WebIntent', 'unregisterBroadcastReceiver', []);
+    };
+
     WebIntent.prototype.sendBroadcast = function(params, success, fail) {
         return cordova.exec(function(args) {
             success(args);

@@ -2,6 +2,7 @@ package com.borismus.webintent;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.cordova.CordovaActivity;
 import org.json.JSONArray;
@@ -9,8 +10,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.net.Uri;
 import android.text.Html;
+import android.util.Log;
+import android.os.Bundle;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -31,6 +37,8 @@ import org.apache.cordova.PluginResult;
 public class WebIntent extends CordovaPlugin {
 
     private CallbackContext onNewIntentCallbackContext = null;
+    private CallbackContext onReceiveBroadcastCallbackContext = null;
+    private BroadcastReceiver broadcastReceiver = null;
 
     //public boolean execute(String action, JSONArray args, String callbackId) {
     @Override
@@ -45,8 +53,9 @@ public class WebIntent extends CordovaPlugin {
                 }
 
                 // Parse the arguments
-				final CordovaResourceApi resourceApi = webView.getResourceApi();
+                final CordovaResourceApi resourceApi = webView.getResourceApi();
                 JSONObject obj = args.getJSONObject(0);
+                String intentAction = obj.has("action") ? obj.getString("action") : null;
                 String type = obj.has("type") ? obj.getString("type") : null;
                 String packageName = obj.has("packageName") ? obj.getString("packageName") : null;
                 Uri uri = obj.has("url") ? resourceApi.remapUri(Uri.parse(obj.getString("url"))) : null;
@@ -63,7 +72,7 @@ public class WebIntent extends CordovaPlugin {
                     }
                 }
 
-                startActivity(obj.getString("action"), packageName, uri, type, extrasMap);
+                startActivity(intentAction, packageName, uri, type, extrasMap);
                 //return new PluginResult(PluginResult.Status.OK);
                 callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK));
                 return true;
@@ -122,9 +131,58 @@ public class WebIntent extends CordovaPlugin {
                 result.setKeepCallback(true); //re-use the callback on intent events
                 callbackContext.sendPluginResult(result);
                 return true;
-                //return result;
-            } else if (action.equals("sendBroadcast")) 
-            {
+            } else if (action.equals("registerBroadcastReceiver")) {
+                if (args.length() != 1) {
+                    callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
+                    return false;
+                }
+                if (WebIntent.this.broadcastReceiver != null) {
+                   Log.d("WebIntent", "BroadcastReceiver already registered - unregister first");
+                   ((CordovaActivity)this.cordova.getActivity()).unregisterReceiver(WebIntent.this.broadcastReceiver);
+                   WebIntent.this.broadcastReceiver = null;
+                   WebIntent.this.onReceiveBroadcastCallbackContext = null;
+                }
+                JSONObject obj = args.getJSONObject(0);
+                String intentAction = obj.has("intentAction") ? obj.getString("intentAction") : null;
+                Log.d("WebIntent", "registerBroadcastReceiver: registering for " + intentAction);
+            	 // save reference to the callback; will be called on broadcast events
+                this.onReceiveBroadcastCallbackContext = callbackContext;
+
+                IntentFilter intentFilter = new IntentFilter(intentAction);
+                WebIntent.this.broadcastReceiver = new BroadcastReceiver() {
+                   @Override
+                   public void onReceive(Context context, Intent intent) {
+                      Log.d("WebIntent", "received " + intent + ", " + intent.getExtras());
+                      JSONObject json = new JSONObject();
+                      Bundle bundle = intent.getExtras();
+                      Set<String> keys = bundle.keySet();
+                      for (String key : keys) {
+                         try {
+                            json.put(key, bundle.get(key));
+                         } catch(JSONException e) {
+                            Log.e("WebIntent", "error converting bundle to JSON");
+                         }
+                      }
+        	             PluginResult result = new PluginResult(PluginResult.Status.OK, json.toString());
+                      result.setKeepCallback(true); 
+                      WebIntent.this.onReceiveBroadcastCallbackContext.sendPluginResult(result);
+                   }
+                };
+                ((CordovaActivity)this.cordova.getActivity()).registerReceiver(WebIntent.this.broadcastReceiver, intentFilter);
+                PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+                result.setKeepCallback(true); 
+                callbackContext.sendPluginResult(result);
+                return true;
+            } else if (action.equals("unregisterBroadcastReceiver")) {
+                if (WebIntent.this.broadcastReceiver != null) {
+                   Log.d("WebIntent", "unregisterBroadcastReceiver");
+                   ((CordovaActivity)this.cordova.getActivity()).unregisterReceiver(WebIntent.this.broadcastReceiver);
+                   WebIntent.this.onReceiveBroadcastCallbackContext = null;
+                   WebIntent.this.broadcastReceiver = null;
+                }
+                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.NO_RESULT));
+                return true;
+            } else if (action.equals("sendBroadcast")) {
                 if (args.length() != 1) {
                     //return new PluginResult(PluginResult.Status.INVALID_ACTION);
                     callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
@@ -170,7 +228,7 @@ public class WebIntent extends CordovaPlugin {
         if (this.onNewIntentCallbackContext != null) {
         	PluginResult result = new PluginResult(PluginResult.Status.OK, intent.getDataString());
         	result.setKeepCallback(true);
-            this.onNewIntentCallbackContext.sendPluginResult(result);
+         this.onNewIntentCallbackContext.sendPluginResult(result);
         }
     }
 
