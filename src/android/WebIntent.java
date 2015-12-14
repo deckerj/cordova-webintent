@@ -63,7 +63,7 @@ public class WebIntent extends CordovaPlugin {
                     }
                 }
 
-                startActivity(obj.getString("action"), uri, type, extrasMap);
+                startActivity(obj.getString("action"), packageName, uri, type, extrasMap);
                 //return new PluginResult(PluginResult.Status.OK);
                 callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK));
                 return true;
