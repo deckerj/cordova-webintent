@@ -48,7 +48,7 @@ public class WebIntent extends CordovaPlugin {
 				final CordovaResourceApi resourceApi = webView.getResourceApi();
                 JSONObject obj = args.getJSONObject(0);
                 String type = obj.has("type") ? obj.getString("type") : null;
-                String package = obj.has("packageName") ? obj.getString("packageName") : null;
+                String packageName = obj.has("packageName") ? obj.getString("packageName") : null;
                 Uri uri = obj.has("url") ? resourceApi.remapUri(Uri.parse(obj.getString("url"))) : null;
                 JSONObject extras = obj.has("extras") ? obj.getJSONObject("extras") : null;
                 Map<String, String> extrasMap = new HashMap<String, String>();
@@ -179,7 +179,7 @@ public class WebIntent extends CordovaPlugin {
         Intent i = null;
         if (uri != null) {
             i = new Intent(action, uri)
-        } else if (package != null) {
+        } else if (packageName != null) {
             i = ((CordovaActivity)this.cordova.getActivity()).getPackageManager().getLaunchIntentForPackage(packageName);
         } else {
             i = new Intent(action);
