@@ -48,6 +48,7 @@ public class WebIntent extends CordovaPlugin {
 				final CordovaResourceApi resourceApi = webView.getResourceApi();
                 JSONObject obj = args.getJSONObject(0);
                 String type = obj.has("type") ? obj.getString("type") : null;
+                String package = obj.has("packageName") ? obj.getString("packageName") : null;
                 Uri uri = obj.has("url") ? resourceApi.remapUri(Uri.parse(obj.getString("url"))) : null;
                 JSONObject extras = obj.has("extras") ? obj.getJSONObject("extras") : null;
                 Map<String, String> extrasMap = new HashMap<String, String>();
@@ -173,8 +174,16 @@ public class WebIntent extends CordovaPlugin {
         }
     }
 
-    void startActivity(String action, Uri uri, String type, Map<String, String> extras) {
-        Intent i = (uri != null ? new Intent(action, uri) : new Intent(action));
+    void startActivity(String action, String packageName, Uri uri, String type, Map<String, String> extras) {
+
+        Intent i = null;
+        if (uri != null) {
+            i = new Intent(action, uri)
+        } else if (package != null) {
+            i = ((CordovaActivity)this.cordova.getActivity()).getPackageManager().getLaunchIntentForPackage(packageName);
+        } else {
+            i = new Intent(action);
+        }
         
         if (type != null && uri != null) {
             i.setDataAndType(uri, type); //Fix the crash problem with android 2.3.6
