@@ -178,7 +178,7 @@ public class WebIntent extends CordovaPlugin {
 
         Intent i = null;
         if (uri != null) {
-            i = new Intent(action, uri)
+            i = new Intent(action, uri);
         } else if (packageName != null) {
             i = ((CordovaActivity)this.cordova.getActivity()).getPackageManager().getLaunchIntentForPackage(packageName);
         } else {
