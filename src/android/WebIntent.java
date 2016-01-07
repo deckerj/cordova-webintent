@@ -43,9 +43,11 @@ public class WebIntent extends CordovaPlugin {
     //public boolean execute(String action, JSONArray args, String callbackId) {
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) {
+        Log.d("WebIntent", "execute action " + action);
         try {
 
             if (action.equals("startActivity")) {
+                Log.d("WebIntent", "startActivity " + args.toString());
                 if (args.length() != 1) {
                     //return new PluginResult(PluginResult.Status.INVALID_ACTION);
                     callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
